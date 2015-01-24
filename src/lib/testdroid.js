@@ -37,7 +37,9 @@ export default class {
     r.send(payload);
     }
 
-    return r.end();
+    var res = await r.end();
+    debug(res);
+    return res;
   }
 
   async buildHeaders(additionalHeaders) {
@@ -53,6 +55,7 @@ export default class {
   }
 
   async get(path, opts) {
+    opts = typeof(opts) !== 'undefined' ? opts : {};
     debug("Retrieving '/%s' with opts: %j", path, opts);
     let res = await this.__request('get', path, opts);
 
@@ -62,6 +65,19 @@ export default class {
     }
 
     return res.body;
+  }
+
+  async getDeviceByName(deviceName) {
+    let devices = await this.getDevices();
+
+    var device;
+    for (var i=0; i < devices.length; i++) {
+      if (devices[i].displayName === deviceName) {
+        device = devices[i];
+        break;
+      }
+    }
+    return device;
   }
 
   async getDevices(limit) {
@@ -164,7 +180,7 @@ export default class {
 
     debug(`Started device session: Session ID: ${res.body.id}`);
 
-    return res.body.id;
+    return res.body;
   }
 
   async stopDeviceSession(sessionId) {

@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "description": "NodeJS client for interacting with Testdroid",
   "main": "build/lib/testdroid.js",
-  "bin": {
-    "testdroid": "build/bin/testdroid.js"
-  },
   "scripts": {
     "test": "mocha $(find test -name '*_test.js') --reporter spec",
     "prepublish": "6to5 -s -m common -e src --out-dir build"
