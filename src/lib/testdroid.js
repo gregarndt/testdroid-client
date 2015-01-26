@@ -13,6 +13,29 @@ function sleep(duration) {
     });
 }
 
+/**
+ * Initializes a new Testdroid client to be used with the Testdroid Cloud API.
+ *
+ * Examples:
+ *
+ * var Testdroid = require('testdroid-client');
+
+ * var username = 'joe@example.com';
+ * var password = '123456';
+ * var cloudUrl = 'http://cloudurl/';
+
+ * var client = new Testdroid(cloudUrl, username, password);
+
+ * // Get list of devices
+
+ * client.getDevices().then(function(devices) {
+    console.dir(getDevices);
+ * });
+ *
+ * @param {String} url - URL of the cloud api
+ * @param {String} username
+ * @param {String} password
+ */
 export default class {
   constructor(url, username, password) {
     this.version = version;
@@ -23,6 +46,27 @@ export default class {
     this.userAgent = `testdroid-client/${this.version}`;
   }
 
+  /**
+   * Submits a request to the api endpoint.  Options can be passed in for payload and
+   * additional headers.
+   *
+   * Example options:
+   * var requestOptions = {
+   *   'headers': {
+   *     'x-user': 'foo'
+   *    },
+   *    'payload': {
+   *      'limit': 1
+   *    }
+   * };
+   *
+   * __request('get', '/devices', requestOptions);
+   *
+   * @param {String} method - method for the request.  'get' or 'post'
+   * @param {String} path - endpoint to submit request to
+   * @param {opts} opts - optional opts to include.  Maybe include payload and/or headers
+   * @returns {Object} Response
+   */
   async __request(method, path, opts) {
     let endpoint = urljoin(this.apiUrl, path);
     let payload = 'payload' in opts ? opts.payload : {};
@@ -54,6 +98,21 @@ export default class {
     return headers;
   }
 
+  /**
+   * Submits a get request to the cloud api with optional query string.  Query
+   * parameters are supplied in the payload of the options passed in.
+   *
+   * Payload may container either an object to be serialized into a query string
+   * or the query string itself.
+   *
+   * Examples:
+   * // Get request using payload as object
+   * client.get('/devices', { 'payload': { 'limit': 1 } });
+   *
+   * @param {String} path - API endpoint to submit post request to.
+   * @param {Object} opts - Payload to send.
+   * * @returns {Object} Response
+   */
   async get(path, opts) {
     opts = typeof(opts) !== 'undefined' ? opts : {};
     debug("Retrieving '/%s' with opts: %j", path, opts);
@@ -67,6 +126,11 @@ export default class {
     return res.body;
   }
 
+  /**
+   * Retrieves all devices matching a given name.
+   * @param {String} deviceName - Name of the device
+   * @return {Object} Device information
+   */
   async getDeviceByName(deviceName) {
     let devices = await this.getDevices();
 
@@ -80,6 +144,11 @@ export default class {
     return device;
   }
 
+  /**
+   * Retrieves all devices.
+   * @param {Number} limit - number of devices to return
+   * @returns {Array}
+   */
   async getDevices(limit) {
     let deviceLimit = typeof(limit) !== 'undefined' ? limit : 0;
     let opts = { 'payload': { 'limit': deviceLimit }};
@@ -87,6 +156,17 @@ export default class {
     return res.data;
   }
 
+  /**
+   * Creates proxy for adb and marionette commands.  ADB proxy will return
+   * device information such as serial number as well as ADB host/port to use
+   * for things like gaiatest (--adb-host option).  This operation can take up
+   * to 120 seconds depending on how long the remote host takes to create a
+   * proxy session.  Usually this is done within a second or two though.
+   *
+   * @param {String} type - 'adb' or 'marionette' proxy type
+   * @param {String} sessionId - ID for the current session as returned by startDeviceSession
+   * @returns {Object} Proxy session information
+   */
   async getProxy(type, sessionId) {
     debug(`Creating ${type} proxied session`);
     let opts = {
@@ -103,6 +183,7 @@ export default class {
       debug(`Creating proxied '${type}' session. Attempt ${i} of ${maxRetries}`);
       res = await this.get('proxy-plugin/proxies', opts);
       if (res.length) break ;
+      // Sleep for 2 seconds to give remote a chance to create proxied session
       await sleep(2000);
     }
 
@@ -113,6 +194,12 @@ export default class {
     return res[0];
   }
 
+  /**
+   * Retrieves authorization token.  If client currently has token, then a refresh
+   * will be done and new token returned.
+   *
+   * returns {String}
+   */
   async getToken() {
     let authUrl = urljoin(this.baseUrl, 'oauth/token');
     let payload;
@@ -125,7 +212,7 @@ export default class {
         'password': this.password
       };
     } else {
-      // TODO only refresh if expiration is close (10 seconds?)
+      // TODO only refresh if expiration is close?
       debug('refreshing token');
       payload = {
         'client_id': 'testdroid-cloud-api',
@@ -158,6 +245,13 @@ export default class {
     return res.body.access_token;
   }
 
+  /**
+   * Submits a post request to the cloud api with optional payload.
+   *
+   * @param {String} path - API endpoint to submit post request to.
+   * @param {Object} opts - Payload to send
+   * @returns {Object} Response
+   */
   async post(path, opts) {
     let opts = typeof(opts) !== 'undefined' ? opts : {};
     debug("Submitting to %s with opts: %j", path, opts);
@@ -173,6 +267,12 @@ export default class {
     return res;
   }
 
+  /**
+   * Creates a device session for a particular device ID.
+   *
+   * @param {String} deviceId - ID of the device as returned by getDevices or getDeviceByName
+   * @returns {Object} Information about the device session including session ID which is used elsewhere.
+   */
   async startDeviceSession(deviceId) {
     debug("Creating a device session for '%s'", deviceId);
     let payload = { 'deviceModelId': deviceId };
@@ -183,6 +283,11 @@ export default class {
     return res.body;
   }
 
+  /**
+   * Releases a device session so that it can be used by other clients.
+   *
+   * @param {String} sessionId - ID of the session to release
+   */
   async stopDeviceSession(sessionId) {
     debug(`Stopping device session ${sessionId}`);
     let path = `me/device-sessions/${sessionId}/release`;
