@@ -2,7 +2,7 @@ import '6to5/polyfill';
 import { version } from '../../package.json';
 import Debug from 'debug';
 import request from 'superagent-promise';
-import url from 'url';
+import urljoin from 'url-join';
 import util from 'util';
 
 let debug = Debug('testdroid-client');
@@ -24,7 +24,7 @@ export default class {
   }
 
   async __request(method, path, opts) {
-    let endpoint = url.resolve(this.apiUrl, path);
+    let endpoint = urljoin(this.apiUrl, path);
     let payload = 'payload' in opts ? opts.payload : {};
     let headers = await this.buildHeaders(opts.headers);
     let r = request(method.toUpperCase(), endpoint);
@@ -114,7 +114,7 @@ export default class {
   }
 
   async getToken() {
-    let authUrl = url.resolve(this.baseUrl, 'oauth/token');
+    let authUrl = urljoin(this.baseUrl, 'oauth/token');
     let payload;
     if (!this.token || Date.now() > this.tokenExpiration) {
       debug('requesting new token');

@@ -23,7 +23,8 @@
     "debug": "^2.1.1",
     "promise": "^6.1.0",
     "superagent": "^0.21.0",
-    "superagent-promise": "^0.2.0"
+    "superagent-promise": "^0.2.0",
+    "url-join": "0.0.1"
   },
   "devDependencies": {
     "mocha": "^2.1.0"
