@@ -1,7 +1,7 @@
 {
   "name": "testdroid-client",
   "version": "0.0.1",
-  "description": "NodeJS client for interacting with Testdroid",
+  "description": "Client for interacting with Testdroid Cloud API",
   "main": "build/lib/testdroid.js",
   "scripts": {
     "test": "mocha $(find test -name '*_test.js') --reporter spec",
@@ -12,7 +12,7 @@
     "url": "https://github.com/mozilla-b2g/testdroid-client.git"
   },
   "author": "Greg Arndt",
-  "license": "ISC",
+  "license": "Apache2",
   "bugs": {
     "url": "https://github.com/mozilla-b2g/testdroid-client/issues"
   },
