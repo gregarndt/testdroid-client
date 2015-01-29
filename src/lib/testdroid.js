@@ -179,7 +179,7 @@ export default class {
     let res;
     let maxRetries = 60;
     // Attempt to get a proxied adb/marionette connection.  Stop after 120 seconds
-    for (var i = 0; i < maxRetries; i++) {
+    for (let i = 0; i < maxRetries; i++) {
       debug(`Creating proxied '${type}' session. Attempt ${i} of ${maxRetries}`);
       res = await this.get('proxy-plugin/proxies', opts);
       if (res.length) break ;
@@ -188,7 +188,9 @@ export default class {
     }
 
     if (!res) {
-      throw new Error('Could not get proxied session');
+      throw new Error(
+        `Could not get ${type} proxy session for ${sessionId}`
+      );
     }
 
     return res[0];
@@ -260,10 +262,6 @@ export default class {
     };
     let res = await this.__request('post', path, opts);
 
-    if (!res.ok) {
-      throw new Error(res.error);
-    }
-
     return res;
   }
 
@@ -277,6 +275,10 @@ export default class {
     debug("Creating a device session for '%s'", deviceId);
     let payload = { 'deviceModelId': deviceId };
     let res = await this.post('me/device-sessions', { 'payload': payload });
+
+    if (!res.ok) {
+      throw new Error(`Could not create session for ${deviceId}. $res.error`);
+    }
 
     debug(`Started device session: Session ID: ${res.body.id}`);
 
@@ -292,6 +294,12 @@ export default class {
     debug(`Stopping device session ${sessionId}`);
     let path = `me/device-sessions/${sessionId}/release`;
     let res = await this.post(path);
+
+    if (!res.ok) {
+      throw new Error(
+        `Could not stop the session properly for ${sessionId}.  ${res.error}`
+      );
+    }
 
     return res;
   }
