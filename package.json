@@ -2,7 +2,7 @@
   "name": "testdroid-client",
   "version": "0.0.1",
   "description": "Client for interacting with Testdroid Cloud API",
-  "main": "build/lib/testdroid.js",
+  "main": "./build/lib/testdroid.js",
   "scripts": {
     "test": "mocha $(find test -name '*_test.js') --reporter spec",
     "prepublish": "6to5 -s -m common -e src --out-dir build"
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/mozilla-b2g/testdroid-client",
   "dependencies": {
-    "6to5": "^2.12.6",
+    "6to5": "^3.0.0",
     "argparse": "^0.1.16",
     "debug": "^2.1.1",
     "promise": "^6.1.0",
