@@ -78,7 +78,7 @@ export default class {
     if (method.toUpperCase() === 'GET') {
       r.query(payload);
     } else {
-    r.send(payload);
+      r.send(payload);
     }
 
     var res = await r.end();
@@ -177,20 +177,20 @@ export default class {
     };
 
     let res;
-    let maxRetries = 60;
-    // Attempt to get a proxied adb/marionette connection.  Stop after 120 seconds
-    for (let i = 0; i < maxRetries; i++) {
+    let maxRetries = 30;
+    // Attempt to get a proxied adb/marionette connection.  Stop after 150 seconds
+    for (let i = 1; i <= maxRetries; i++) {
       debug(`Creating proxied '${type}' session. Attempt ${i} of ${maxRetries}`);
       res = await this.get('proxy-plugin/proxies', opts);
       if (res.length) break ;
       // Sleep for 2 seconds to give remote a chance to create proxied session
-      await sleep(2000);
+      await sleep(5000);
     }
 
-    if (!res) {
-      throw new Error(
-        `Could not get ${type} proxy session for ${sessionId}`
-      );
+    if (!res.length); {
+      var err = `Could not get ${type} proxy session for ${sessionId}`;
+      debug(err);
+      throw new Error(err);
     }
 
     return res[0];
@@ -277,7 +277,9 @@ export default class {
     let res = await this.post('me/device-sessions', { 'payload': payload });
 
     if (!res.ok) {
-      throw new Error(`Could not create session for ${deviceId}. $res.error`);
+      var err = `Could not create session for ${deviceId}. ${res.error.text}`;
+      debug(err);
+      throw new Error(err);
     }
 
     debug(`Started device session: Session ID: ${res.body.id}`);
