@@ -123,7 +123,7 @@ export default class {
 
     }
 
-    return res.body;
+    return res;
   }
 
   /**
@@ -153,7 +153,7 @@ export default class {
     let deviceLimit = typeof(limit) !== 'undefined' ? limit : 0;
     let opts = { 'payload': { 'limit': deviceLimit }};
     let res = await this.get('devices', opts);
-    return res.data;
+    return res.body.data;
   }
 
   /**
@@ -182,18 +182,18 @@ export default class {
     for (let i = 1; i <= maxRetries; i++) {
       debug(`Creating proxied '${type}' session. Attempt ${i} of ${maxRetries}`);
       res = await this.get('proxy-plugin/proxies', opts);
-      if (res.length) break ;
+      if (res.body && res.body.length) break ;
       // Sleep for 2 seconds to give remote a chance to create proxied session
       await sleep(5000);
     }
 
-    if (!res.length); {
+    if (!res.body.length); {
       var err = `Could not get ${type} proxy session for ${sessionId}`;
       debug(err);
       throw new Error(err);
     }
 
-    return res[0];
+    return res.body[0];
   }
 
   /**
@@ -277,7 +277,7 @@ export default class {
     let res = await this.post('me/device-sessions', { 'payload': payload });
 
     if (!res.ok) {
-      var err = `Could not create session for ${deviceId}. ${res.error.text}`;
+      var err = `Could not create session for ${deviceId}. ${res.error.message}`;
       debug(err);
       throw new Error(err);
     }
@@ -299,7 +299,7 @@ export default class {
 
     if (!res.ok) {
       throw new Error(
-        `Could not stop the session properly for ${sessionId}.  ${res.error}`
+        `Could not stop the session properly for ${sessionId}.  ${res.error.message}`
       );
     }
 
