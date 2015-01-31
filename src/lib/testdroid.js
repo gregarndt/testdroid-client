@@ -81,7 +81,6 @@ export default class {
     }
 
     var res = await r.end();
-    debug(res);
     return res;
   }
 
@@ -217,16 +216,18 @@ export default class {
 
     let res;
     let maxRetries = 30;
+    let queryFormat = "{\"type\":\"%s\", \"sessionId\": %d}";
     // Attempt to get a proxied adb/marionette connection.  Stop after 150 seconds
     for (let i = 1; i <= maxRetries; i++) {
       debug(`Creating proxied '${type}' session. Attempt ${i} of ${maxRetries}`);
-      res = await this.get('proxy-plugin/proxies', opts);
-      if (res.body && res.body.length) break ;
+      let encodedQuery = encodeURIComponent(util.format(queryFormat, type, sessionId));
+      res = await this.get(util.format('proxy-plugin/proxies?where=%s', encodedQuery));
+      if (res.ok && res.body && res.body.length) break ;
       // Sleep for 2 seconds to give remote a chance to create proxied session
       await sleep(5000);
     }
 
-    if (!res.body.length); {
+    if (!res.ok || !res.body.length) {
       var err = `Could not get ${type} proxy session for ${sessionId}`;
       debug(err);
       throw new Error(err);
