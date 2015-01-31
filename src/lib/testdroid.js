@@ -1,4 +1,3 @@
-import '6to5/polyfill';
 import { version } from '../../package.json';
 import Debug from 'debug';
 import request from 'superagent-promise';
@@ -154,6 +153,46 @@ export default class {
     let opts = { 'payload': { 'limit': deviceLimit }};
     let res = await this.get('devices', opts);
     return res.body.data;
+  }
+
+  /**
+   * Gets all label groups
+   *
+   * @returns {Array}
+   */
+  async getLabelGroups() {
+    debug("Retrieving label groups");
+    let res = await this.get('label-groups');
+
+    if (!res.ok) {
+      let err = `Could not retrieve label groups`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body.data;
+  }
+
+  /**
+   * Gets a label with `labelName` from the label groups.
+   *
+   * @param {String} labelName - label name to search for
+   *
+   * @returns {Object} label
+   */
+  async getLabelGroup(labelName) {
+    debug(`Retrieving '${labelName}' group`);
+    let labelName = labelName.toLowerCase();
+    let labels = await this.getLabelGroups();
+    let label = labels.find(l => l.displayName.toLowerCase() === labelName);
+
+    if (!label) {
+      let err = `Could not find '${labelName}' label`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return label;
   }
 
   /**
