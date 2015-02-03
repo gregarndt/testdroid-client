@@ -97,6 +97,27 @@ export default class {
   }
 
   /**
+   * Create a test run within a project
+   *
+   * @param {Object} project - Project object container id, name, etc
+   *
+   * @returns {Object} Test run
+   */
+  async createTestRun(project) {
+    if (!project || !project.id) throw new Error('Must supply a project for the test run');
+
+    let res = await this.post('/runs', { payload: { projectId: project.id } });
+
+    if (!res.ok) {
+      let err = `Could not create a test run in '${project.name}'. ${res.error.message}`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body;
+  }
+
+  /**
    * Submits a get request to the cloud api with optional query string.  Query
    * parameters are supplied in the payload of the options passed in.
    *
@@ -186,8 +207,8 @@ export default class {
    * @returns {Array}
    */
   async getLabelGroup(labelName) {
+    if (!labelName) return;
     debug(`Retrieving ${labelName} label group`);
-    if (!labelName) throw new Error('Must supply label group name');
     let search = {'search': labelName};
     let res = await this.get('label-groups', {'payload': search});
 
@@ -213,6 +234,37 @@ export default class {
 
     return res.body.data.find(l => l.displayName === labelName);
   }
+
+  async getProjects(limit) {
+    limit = typeof(limit) === 'number' ? limit : 0;
+    let res = await this.get('me/projects', {'payload': { 'limit': limit } });
+
+    if (!res.ok) {
+      let err = 'Could not retrieve projects.';
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body.data;
+
+
+  }
+
+  async getProject(projectName) {
+    if (!projectName) return;
+    let res = await this.get('me/projects', {'payload': { 'search': projectName} });
+
+    if (!res.ok) {
+      let err = 'Could not retrieve projects.';
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body.data;
+
+
+  }
+
   /**
    * Creates proxy for adb and marionette commands.  ADB proxy will return
    * device information such as serial number as well as ADB host/port to use
