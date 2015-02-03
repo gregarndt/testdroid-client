@@ -125,6 +125,18 @@ export default class {
   }
 
   /**
+   * Retrieves all devices.
+   * @param {Number} limit - number of devices to return
+   * @returns {Array}
+   */
+  async getDevices(limit) {
+    let deviceLimit = typeof(limit) !== 'undefined' ? limit : 0;
+    let opts = { 'payload': { 'limit': deviceLimit }};
+    let res = await this.get('devices', opts);
+    return res.body.data;
+  }
+
+  /**
    * Retrieves all devices matching a given name.
    * @param {String} deviceName - Name of the device
    * @return {Object} Device information
@@ -143,28 +155,22 @@ export default class {
   }
 
   /**
-   * Retrieves all devices.
-   * @param {Number} limit - number of devices to return
-   * @returns {Array}
-   */
-  async getDevices(limit) {
-    let deviceLimit = typeof(limit) !== 'undefined' ? limit : 0;
-    let opts = { 'payload': { 'limit': deviceLimit }};
-    let res = await this.get('devices', opts);
-    return res.body.data;
-  }
-
-  /**
-   * Gets all label groups
+   * Retreives devices with a given label.
+   *
+   * @param {Object} Label object as returned from methods such as getLabelinGroup.
    *
    * @returns {Array}
    */
-  async getLabelGroups() {
-    debug("Retrieving label groups");
-    let res = await this.get('label-groups');
-
+  async getDevicesWithLabel(label) {
+    debug(`Retrieving devices with label ${label.displayName}`);
+    let opts = { 'payload': { 'label_id[]':  label.id, 'limit': 0}};
+    let res = await this.get('devices', opts);
     if (!res.ok) {
-      let err = `Could not retrieve label groups`;
+      let err = (
+        `Request for devices with label ${label.displayName} ` +
+        `could not be completed. ${res.error.message}`
+      );
+
       debug(err);
       throw new Error(err);
     }
@@ -173,27 +179,40 @@ export default class {
   }
 
   /**
-   * Gets a label with `labelName` from the label groups.
+   * Gets a specific label group
    *
-   * @param {String} labelName - label name to search for
+   * @param {String} labelName - Name of the label group
    *
-   * @returns {Object} label
+   * @returns {Array}
    */
   async getLabelGroup(labelName) {
-    debug(`Retrieving '${labelName}' group`);
-    let labelName = labelName.toLowerCase();
-    let labels = await this.getLabelGroups();
-    let label = labels.find(l => l.displayName.toLowerCase() === labelName);
+    debug(`Retrieving ${labelName} label group`);
+    if (!labelName) throw new Error('Must supply label group name');
+    let search = {'search': labelName};
+    let res = await this.get('label-groups', {'payload': search});
 
-    if (!label) {
-      let err = `Could not find '${labelName}' label`;
+    if (!res.ok) {
+      let err = `Could not complete request to find label group. ${res.error.message}`;
       debug(err);
       throw new Error(err);
     }
 
-    return label;
+    return res.body.data.find(l => l.displayName === labelName);
   }
 
+  async getLabelInGroup(labelName, labelGroup) {
+    debug(`Retrieving label '${labelName}' in label group ${labelGroup.displayName}`);
+    let payload = { 'payload': { 'search': labelName } };
+    let res = await this.get(`label-groups/${labelGroup.id}/labels`, payload);
+
+    if (!res.ok) {
+      let err = `Could not retrieve label. Error: ${res.error.message}`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body.data.find(l => l.displayName === labelName);
+  }
   /**
    * Creates proxy for adb and marionette commands.  ADB proxy will return
    * device information such as serial number as well as ADB host/port to use
