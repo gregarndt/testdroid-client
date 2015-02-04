@@ -3,6 +3,7 @@ import Debug from 'debug';
 import request from 'superagent-promise';
 import urljoin from 'url-join';
 import util from 'util';
+import Project from './project';
 
 let debug = Debug('testdroid-client');
 
@@ -98,33 +99,22 @@ export default class {
   }
 
   /**
-   * Create a test run within a project
+   * Sends a delete request
    *
-   * @param {Object} project - Project object container id, name, etc
+   * @param {String} path
    *
-   * @returns {Object} Test run
+   * @returns {Object}
    */
-  async createTestRun(project) {
-    if (!project || !project.id) throw new Error('Must supply a project for the test run');
-
-    let res = await this.post('/runs', { payload: { projectId: project.id } });
-
-    if (!res.ok) {
-      let err = `Could not create a test run in '${project.name}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
-    }
-
-    return res.body;
-  }
-
-  async abortTestrun(testRun) {
-    let res = await this.post(`/runs/${testRun.id}/abort`);
-    console.log(res);
+  async del(path) {
+    debug("Deleting '/%s'", path);
+    let res = await this.__request('delete', path);
 
     if (!res.ok) {
-      throw new Error(res.error.message);
+      debug(res);
+      throw new Error(res.error);
+
     }
+
     return res;
   }
 
@@ -233,6 +223,14 @@ export default class {
     return res.body.data.find(l => l.displayName === labelName);
   }
 
+  /**
+   * Retrieves label within a specific label group.
+   *
+   * @param {String} labelName
+   * @param {Object} labelGroup
+   *
+   * @returns {Object}
+   */
   async getLabelInGroup(labelName, labelGroup) {
     debug(`Retrieving label '${labelName}' in label group ${labelGroup.displayName}`);
     let payload = { 'payload': { 'search': labelName } };
@@ -247,6 +245,13 @@ export default class {
     return res.body.data.find(l => l.displayName === labelName);
   }
 
+  /**
+   * Retrieves all user configured projects
+   *
+   * @param {Number} limit - Return only 'limit' entries. Default: all
+   *
+   * @return {Array} Array of Project instances
+   */
   async getProjects(limit) {
     limit = typeof(limit) === 'number' ? limit : 0;
     let res = await this.get('me/projects', {'payload': { 'limit': limit } });
@@ -257,11 +262,22 @@ export default class {
       throw new Error(err);
     }
 
-    return res.body.data;
+    if (!res.body.data.length) return [];
 
+    let projects = res.body.data.map((project) => {
+      return new Project(this, project);
+    });
 
+    return projects;
   }
 
+  /**
+   * Retrieves project with the given name
+   *
+   * @param {String} projectName
+   *
+   * @returns {Object} Project - new project instance
+   */
   async getProject(projectName) {
     if (!projectName) return;
     let res = await this.get('me/projects', {'payload': { 'search': projectName} });
@@ -272,7 +288,12 @@ export default class {
       throw new Error(err);
     }
 
-    return res.body.data;
+    // find exact match
+    let project = res.body.data.find(p => p.name === projectName);
+
+    if (!project) return;
+
+    return new Project(this, project);
   }
 
   /**
@@ -315,99 +336,6 @@ export default class {
     }
 
     return res.body[0];
-  }
-
-  async getTestRunConfigParameters(testRun) {
-    let res = await this.get(`runs/${testRun.id}/config/parameters`);
-
-    if (!res.ok) {
-      let err = (
-        `Could not retrieve config for test run ${testRun.id} ` +
-        `${res.error.message}`
-      );
-      debug(err);
-      throw new Error(err);
-    }
-
-    return res.body.data;
-  }
-  /**
-   * Retrieves a test run within a project.
-   *
-   * @param {Object} project
-   * @param {Object} testRun
-   *
-   * @returns {Object}
-   */
-  async getProjectTestRunConfig(project, testRun) {
-    if (arguments.length < 2) throw new Error('Must supply a project and testRun');
-
-    let res = await this.get(`me/projects/${project.id}/runs/${testRun.id}/config`);
-
-    if (!res.ok) {
-      let err = (
-        `Could not retrieve test run ${testRun.id} in project ${project.name}. ` +
-        `${res.error.message}`
-      );
-      debug(err);
-      throw new Error(err);
-    }
-
-    return res.body;
-  }
-  async getProjectTestRun(project, testRun) {
-    if (arguments.length < 2) throw new Error('Must supply a project and testRun');
-
-    let res = await this.get(`me/projects/${project.id}/runs/${testRun.id}`);
-
-    if (!res.ok) {
-      let err = (
-        `Could not retrieve test run ${testRun.id} in project ${project.name}. ` +
-        `${res.error.message}`
-      );
-      debug(err);
-      throw new Error(err);
-    }
-
-    return res.body;
-  }
-
-  async del(path) {
-    debug("Deleting '/%s'", path);
-    let res = await this.__request('delete', path);
-
-    if (!res.ok) {
-      debug(res);
-      throw new Error(res.error);
-
-    }
-
-    return res;
-  }
-
-  async deleteProjectTestRunParameter(project, testRun, parameter) {
-    debug(`Deleting param '${parameter.key}' for test run '${testRun.id}' in project '${project.name}'`);
-    let res = await this.del(`me/projects/${project.id}/runs/${testRun.id}/config/parameters/${parameter.id}`);
-
-    if (!res.ok) {
-      let err = `Could not delete param '${parameter.key}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
-    }
-
-    return;
-  }
-
-  async createProjectTestRunParameter(project, testRun, parameter) {
-    let res = await this.post(`me/projects/${project.id}/runs/${testRun.id}/config/parameters`, {'payload': parameter});
-
-    if (!res.ok) {
-      let err = `Could not create param '${util.inspect(parameter)}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
-    }
-
-    return res.body;
   }
 
   /**
@@ -520,15 +448,5 @@ export default class {
     return res;
   }
 
-  async startTestRun(testRun, devices) {
-    debug('starting test run');
-    var res = await this.post(`runs/${testRun.id}/start`, {'payload': devices});
-
-    if (!res.ok) {
-      let err = `Could not start run. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
-    }
-  }
 }
 

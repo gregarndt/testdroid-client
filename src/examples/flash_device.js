@@ -22,6 +22,7 @@ async () => {
 
   try {
     let t = new Testdroid(baseUrl, username, password);
+
     let labelGroup = await t.getLabelGroup(buildLabelGroupName);
 
     let label = await t.getLabelInGroup(buildUrl, labelGroup);
@@ -37,46 +38,34 @@ async () => {
     }
 
     let project = await t.getProject(flashProjectName);
-    project = project[0];
-    console.log(project);
+    let testRun = await project.createTestRun();
 
-    let testRun = await t.createTestRun(project);
-    console.log(testRun);
+    let projectTestRunConfig = await project.getTestRunConfig(testRun);
 
-    let projectTestRunConfig = await t.getProjectTestRunConfig(project, testRun);
-    console.log(projectTestRunConfig);
-
-    let testRunConfigParams = await t.getTestRunConfigParameters(testRun);
-    console.log(testRunConfigParams);
-    for (let i = 0; i < testRunConfigParams.length; i++) {
-      await t.deleteProjectTestRunParameter(project, testRun, testRunConfigParams[i]);
+    let testRunParams = await testRun.getParameters();
+    for (let i = 0; i < testRunParams.length; i++) {
+      await project.deleteTestRunParameter(testRun, testRunParams[i]);
     }
 
-    let param = await t.createProjectTestRunParameter(project, testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
-    console.log(param);
-
+    let param = await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
     let devices = await t.getDevicesWithLabel('t2m flame');
-    console.log(devices);
     let device = devices.find(d => d.online === true);
     if (!device) {
       throw new Error("Couldn't find device that is online");
     }
 
-    console.log(device);
-
     let deviceIDs = { 'usedDeviceIds[]': device.id };
 
-    let startTestRun = await t.startTestRun(testRun, deviceIDs);
-    testRun = await t.getProjectTestRun(project, testRun);
+    let startTestRun = await testRun.start(deviceIDs);
+    testRun = await project.getTestRun(testRun);
     let timeout = Date.now() + 10*60*1000;
     while (testRun.state !== 'FINISHED') {
       if (Date.now() > timeout) {
-        let res = await t.abortTestrun(testRun);
+        let res = await testRun.abort();
         throw new Error(res);
       }
       await sleep(10000);
-      testRun = await t.getProjectTestRun(project, testRun);
-      console.log(testRun);
+      testRun = await project.getTestRun(testRun);
     }
   }
   catch (e) {

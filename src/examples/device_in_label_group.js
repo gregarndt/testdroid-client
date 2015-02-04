@@ -8,7 +8,8 @@ async () => {
   let labelGroupName = "Build version";
 
   if (process.argv.length < 5) {
-    process.exit("Must supply url, username, and password");
+    console.log("Must supply url, username, and password");
+    process.exit(-1);
   }
   let session, t, labelGroup, label, device;
   try {

@@ -13,6 +13,7 @@ async () => {
     let session, t, projects, project;
     t = new Testdroid(baseUrl, username, password);
     projects = await t.getProjects();
+    console.log(projects);
     project = await t.getProject(projects[0].name);
     console.log(project);
   }
