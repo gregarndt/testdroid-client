@@ -68,6 +68,7 @@ export default class {
    */
   async __request(method, path, opts) {
     let endpoint = urljoin(this.apiUrl, path);
+    opts = typeof(opts) === 'undefined' ? {} : opts;
     let payload = 'payload' in opts ? opts.payload : {};
     let headers = await this.buildHeaders(opts.headers);
     let r = request(method.toUpperCase(), endpoint);
@@ -115,6 +116,16 @@ export default class {
     }
 
     return res.body;
+  }
+
+  async abortTestrun(testRun) {
+    let res = await this.post(`/runs/${testRun.id}/abort`);
+    console.log(res);
+
+    if (!res.ok) {
+      throw new Error(res.error.message);
+    }
+    return res;
   }
 
   /**
@@ -186,6 +197,7 @@ export default class {
     debug(`Retrieving devices with label ${label.displayName}`);
     let opts = { 'payload': { 'label_id[]':  label.id, 'limit': 0}};
     let res = await this.get('devices', opts);
+
     if (!res.ok) {
       let err = (
         `Request for devices with label ${label.displayName} ` +
@@ -261,8 +273,6 @@ export default class {
     }
 
     return res.body.data;
-
-
   }
 
   /**
@@ -294,7 +304,7 @@ export default class {
       let encodedQuery = encodeURIComponent(util.format(queryFormat, type, sessionId));
       res = await this.get(util.format('proxy-plugin/proxies?where=%s', encodedQuery));
       if (res.ok && res.body && res.body.length) break ;
-      // Sleep for 2 seconds to give remote a chance to create proxied session
+      // Sleep for 5 seconds to give remote a chance to create proxied session
       await sleep(5000);
     }
 
@@ -305,6 +315,99 @@ export default class {
     }
 
     return res.body[0];
+  }
+
+  async getTestRunConfigParameters(testRun) {
+    let res = await this.get(`runs/${testRun.id}/config/parameters`);
+
+    if (!res.ok) {
+      let err = (
+        `Could not retrieve config for test run ${testRun.id} ` +
+        `${res.error.message}`
+      );
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body.data;
+  }
+  /**
+   * Retrieves a test run within a project.
+   *
+   * @param {Object} project
+   * @param {Object} testRun
+   *
+   * @returns {Object}
+   */
+  async getProjectTestRunConfig(project, testRun) {
+    if (arguments.length < 2) throw new Error('Must supply a project and testRun');
+
+    let res = await this.get(`me/projects/${project.id}/runs/${testRun.id}/config`);
+
+    if (!res.ok) {
+      let err = (
+        `Could not retrieve test run ${testRun.id} in project ${project.name}. ` +
+        `${res.error.message}`
+      );
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body;
+  }
+  async getProjectTestRun(project, testRun) {
+    if (arguments.length < 2) throw new Error('Must supply a project and testRun');
+
+    let res = await this.get(`me/projects/${project.id}/runs/${testRun.id}`);
+
+    if (!res.ok) {
+      let err = (
+        `Could not retrieve test run ${testRun.id} in project ${project.name}. ` +
+        `${res.error.message}`
+      );
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body;
+  }
+
+  async del(path) {
+    debug("Deleting '/%s'", path);
+    let res = await this.__request('delete', path);
+
+    if (!res.ok) {
+      debug(res);
+      throw new Error(res.error);
+
+    }
+
+    return res;
+  }
+
+  async deleteProjectTestRunParameter(project, testRun, parameter) {
+    debug(`Deleting param '${parameter.key}' for test run '${testRun.id}' in project '${project.name}'`);
+    let res = await this.del(`me/projects/${project.id}/runs/${testRun.id}/config/parameters/${parameter.id}`);
+
+    if (!res.ok) {
+      let err = `Could not delete param '${parameter.key}'. ${res.error.message}`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return;
+  }
+
+  async createProjectTestRunParameter(project, testRun, parameter) {
+    let res = await this.post(`me/projects/${project.id}/runs/${testRun.id}/config/parameters`, {'payload': parameter});
+
+    if (!res.ok) {
+      let err = `Could not create param '${util.inspect(parameter)}'. ${res.error.message}`;
+      debug(err);
+      throw new Error(err);
+    }
+
+    return res.body;
   }
 
   /**
@@ -417,5 +520,15 @@ export default class {
     return res;
   }
 
+  async startTestRun(testRun, devices) {
+    debug('starting test run');
+    var res = await this.post(`runs/${testRun.id}/start`, {'payload': devices});
+
+    if (!res.ok) {
+      let err = `Could not start run. ${res.error.message}`;
+      debug(err);
+      throw new Error(err);
+    }
+  }
 }
 
