@@ -13,11 +13,17 @@ async () => {
   let t;
   try {
     t = new Testdroid(baseUrl, username, password);
-    let device = await t.getDeviceByName('t2m flame');
-    session = await t.startDeviceSession(device.id);
-    let adb = await t.getProxy('adb', session.id);
-    let marionette = await t.getProxy('marionette', session.id);
-    console.log(marionette);
+    let devices = await t.getDevicesByName('t2m flame');
+    let device = devices.find(d => d.online === true);
+    if (device) {
+      session = await t.startDeviceSession(device.id);
+      let adb = await t.getProxy('adb', session.id);
+      let marionette = await t.getProxy('marionette', session.id);
+      console.log(marionette);
+    }
+    else {
+      console.log("Could not find online device");
+    }
   }
   catch (e) {
     console.log(e);
