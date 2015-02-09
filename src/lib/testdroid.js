@@ -110,7 +110,6 @@ export default class {
     let res = await this.__request('delete', path);
 
     if (!res.ok) {
-      debug(res);
       throw new Error(res.error);
 
     }
@@ -163,17 +162,17 @@ export default class {
    * @param {String} deviceName - Name of the device
    * @return {Object} Device information
    */
-  async getDeviceByName(deviceName) {
+  async getDevicesByName(deviceName) {
     let devices = await this.getDevices();
 
-    var device;
+    var matchedDevices = [];
     for (var i=0; i < devices.length; i++) {
       if (devices[i].displayName === deviceName) {
-        device = devices[i];
-        break;
+        matchedDevices.push(devices[i]);
       }
     }
-    return device;
+
+    return matchedDevices;
   }
 
   /**
@@ -356,7 +355,11 @@ export default class {
         'password': this.password
       };
     } else {
-      // TODO only refresh if expiration is close?
+      // only refresh if within 1 minute
+      if (this.tokenExpiration > (Date.now()+60000)) {
+        debug('no need to refresh token');
+        return this.token;
+      }
       debug('refreshing token');
       payload = {
         'client_id': 'testdroid-cloud-api',
@@ -384,7 +387,7 @@ export default class {
 
     this.refreshToken = res.body.refresh_token;
     this.token = res.body.access_token;
-    this.tokenExpiration = new Date(Date.now() + res.body.expires_in);
+    this.tokenExpiration = new Date(Date.now() + (res.body.expires_in * 1000));
 
     return res.body.access_token;
   }
