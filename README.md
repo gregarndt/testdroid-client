@@ -8,6 +8,8 @@ $ npm install testdroid-client
 ```
 
 ## Usage
+Examples can be found [here](src/examples/)
+
 ### Creating testdroid client instance
 ```javascript
 var Testdroid = require('testdroid-client');
