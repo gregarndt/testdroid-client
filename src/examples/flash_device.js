@@ -12,7 +12,7 @@ async () => {
   let username = process.argv[3];
   let password = process.argv[4];
   let buildUrl = process.argv[5];
-  let buildLabelGroupName = 'Build version';
+  let buildLabelGroupName = 'Build Identifier';
   let flashProjectName = 'flash-fxos';
 
   if (process.argv.length < 6) {
