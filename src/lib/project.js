@@ -77,8 +77,6 @@ export default class {
       debug(err);
       throw new Error(err);
     }
-
-    return;
   }
 
   /**

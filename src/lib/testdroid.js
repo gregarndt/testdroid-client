@@ -67,27 +67,33 @@ export default class {
    * @param {opts} opts - optional opts to include.  Maybe include payload and/or headers
    * @returns {Object} Response
    */
-  async __request(method, path, opts) {
+  async __request(method, path, opts={}) {
     let endpoint = urljoin(this.apiUrl, path);
-    opts = typeof(opts) === 'undefined' ? {} : opts;
     let payload = 'payload' in opts ? opts.payload : {};
     let headers = await this.buildHeaders(opts.headers);
-    let r = request(method.toUpperCase(), endpoint);
+    let req = request(method.toUpperCase(), endpoint);
 
-    r.set(headers);
+    req.set(headers);
 
     if (method.toUpperCase() === 'GET') {
-      r.query(payload);
+      req.query(payload);
     } else {
-      r.send(payload);
+      req.send(payload);
     }
 
-    var res = await r.end();
+    var res = await req.end();
     return res;
   }
 
-  async buildHeaders(additionalHeaders) {
-    let headers = typeof(additionalHeaders) !== 'undefined' ? additionalHeaders : {};
+  /**
+   * Creates headers for request.  Main purpose here is to inject the auth token
+   * into the headers for each reqeust.
+   *
+   * @param {Object} headers - Additional headers to be included
+   *
+   * @returns {Object}
+   */
+  async buildHeaders(headers={}) {
     let token = await this.getToken();
     headers.Authorization = `Bearer ${token}`;
 
@@ -132,8 +138,7 @@ export default class {
    * @param {Object} opts - Payload to send.
    * * @returns {Object} Response
    */
-  async get(path, opts) {
-    opts = typeof(opts) !== 'undefined' ? opts : {};
+  async get(path, opts={}) {
     debug("Retrieving '/%s' with opts: %j", path, opts);
     let res = await this.__request('get', path, opts);
 
@@ -150,9 +155,8 @@ export default class {
    * @param {Number} limit - number of devices to return
    * @returns {Array}
    */
-  async getDevices(limit) {
-    let deviceLimit = typeof(limit) !== 'undefined' ? limit : 0;
-    let opts = { 'payload': { 'limit': deviceLimit }};
+  async getDevices(limit=0) {
+    let opts = { 'payload': { 'limit': limit }};
     let res = await this.get('devices', opts);
     return res.body.data;
   }
@@ -165,12 +169,9 @@ export default class {
   async getDevicesByName(deviceName) {
     let devices = await this.getDevices();
 
-    var matchedDevices = [];
-    for (var i=0; i < devices.length; i++) {
-      if (devices[i].displayName === deviceName) {
-        matchedDevices.push(devices[i]);
-      }
-    }
+    let matchedDevices = devices.filter((device) => {
+      return device.displayName === deviceName;
+    });
 
     return matchedDevices;
   }
@@ -183,6 +184,8 @@ export default class {
    * @returns {Array}
    */
   async getDevicesWithLabel(label) {
+    if (!label) return;
+
     debug(`Retrieving devices with label ${label.displayName}`);
     let opts = { 'payload': { 'label_id[]':  label.id, 'limit': 0}};
     let res = await this.get('devices', opts);
@@ -209,6 +212,7 @@ export default class {
    */
   async getLabelGroup(labelName) {
     if (!labelName) return;
+
     debug(`Retrieving ${labelName} label group`);
     let search = {'search': labelName};
     let res = await this.get('label-groups', {'payload': search});
@@ -231,6 +235,8 @@ export default class {
    * @returns {Object}
    */
   async getLabelInGroup(labelName, labelGroup) {
+    if (!labelName || !labelGroup) return;
+
     debug(`Retrieving label '${labelName}' in label group ${labelGroup.displayName}`);
     let payload = { 'payload': { 'search': labelName } };
     let res = await this.get(`label-groups/${labelGroup.id}/labels`, payload);
@@ -399,8 +405,7 @@ export default class {
    * @param {Object} opts - Payload to send
    * @returns {Object} Response
    */
-  async post(path, opts) {
-    let opts = typeof(opts) !== 'undefined' ? opts : {};
+  async post(path, opts={}) {
     debug("Submitting to %s with opts: %j", path, opts);
     opts.headers = {
       'Content-Type': 'application/x-www-form-urlencoded',

@@ -10,16 +10,13 @@ async () => {
     process.exit(-1);
   }
   let session;
-  let t;
+  let client;
   try {
-    t = new Testdroid(baseUrl, username, password);
-    let labelGroups = await t.getLabelGroups();
+    client = new Testdroid(baseUrl, username, password);
+    let labelGroups = await client.getLabelGroups();
     console.log(labelGroups);
   }
   catch (e) {
     console.log(e);
-  }
-  if (session) {
-    await t.stopDeviceSession(session.id);
   }
 }();

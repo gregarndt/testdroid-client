@@ -28,7 +28,6 @@ export default class {
    */
   async abort() {
     let res = await this.client.post(`${this.URI}/abort`);
-    console.log(res);
 
     if (!res.ok) {
       throw new Error(res.error.message);

@@ -11,19 +11,16 @@ async () => {
   }
 
   try {
-    let session, t, project;
+    let session, client, project;
     t = new Testdroid(baseUrl, username, password);
-    project = await t.getProject(projectName);
+    project = await client.getProject(projectName);
     console.log(project);
     project = project[0];
 
-    let testRun = await t.createTestRun(project);
+    let testRun = await client.createTestRun(project);
     console.log(testRun);
   }
   catch (e) {
     console.log(e);
-  }
-  if (session) {
-    await t.stopDeviceSession(session.id);
   }
 }();

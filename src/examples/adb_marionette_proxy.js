@@ -7,28 +7,30 @@ async () => {
 
   if (process.argv.length < 5) {
     console.log("Must supply url, username, and password");
-    process.exit(-1);
+    process.exit(1);
   }
   let session;
-  let t;
+  let client;
   try {
-    t = new Testdroid(baseUrl, username, password);
-    let devices = await t.getDevicesByName('t2m flame');
+    client = new Testdroid(baseUrl, username, password);
+    let devices = await client.getDevicesByName('t2m flame');
     let device = devices.find(d => d.online === true);
     if (device) {
-      session = await t.startDeviceSession(device.id);
-      let adb = await t.getProxy('adb', session.id);
-      let marionette = await t.getProxy('marionette', session.id);
+      session = await client.startDeviceSession(device.id);
+      let adb = await client.getProxy('adb', session.id);
+      let marionette = await client.getProxy('marionette', session.id);
+      console.log(adb);
       console.log(marionette);
     }
     else {
       console.log("Could not find online device");
     }
   }
+  //catch any errors and still let the session be released if necessary.
   catch (e) {
     console.log(e);
   }
   if (session) {
-    await t.stopDeviceSession(session.id);
+    await client.stopDeviceSession(session.id);
   }
 }();

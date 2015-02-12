@@ -21,13 +21,13 @@ async () => {
   }
 
   try {
-    let t = new Testdroid(baseUrl, username, password);
+    let client = new Testdroid(baseUrl, username, password);
 
-    let labelGroup = await t.getLabelGroup(buildLabelGroupName);
+    let labelGroup = await client.getLabelGroup(buildLabelGroupName);
 
-    let label = await t.getLabelInGroup(buildUrl, labelGroup);
+    let label = await client.getLabelInGroup(buildUrl, labelGroup);
     if (label) {
-      let devices = await t.getDevicesWithLabel(label);
+      let devices = await client.getDevicesWithLabel(label);
       if (devices.length) {
         console.log(
           `Device with build was found, no need to flash. \n ` +
@@ -37,7 +37,7 @@ async () => {
       }
     }
 
-    let project = await t.getProject(flashProjectName);
+    let project = await client.getProject(flashProjectName);
     let testRun = await project.createTestRun();
 
     let projectTestRunConfig = await project.getTestRunConfig(testRun);
@@ -48,7 +48,7 @@ async () => {
     }
 
     let param = await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
-    let devices = await t.getDevicesWithLabel('t2m flame');
+    let devices = await client.getDevicesWithLabel('t2m flame');
     let device = devices.find(d => d.online === true);
     if (!device) {
       throw new Error("Couldn't find device that is online");
@@ -62,7 +62,7 @@ async () => {
     while (testRun.state !== 'FINISHED') {
       if (Date.now() > timeout) {
         let res = await testRun.abort();
-        throw new Error(res);
+        throw new Error(res.error);
       }
       await sleep(10000);
       testRun = await project.getTestRun(testRun);
@@ -72,6 +72,6 @@ async () => {
     console.log(e);
   }
   if (session) {
-    await t.stopDeviceSession(session.id);
+    await client.stopDeviceSession(session.id);
   }
 }();
