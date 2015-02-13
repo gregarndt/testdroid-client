@@ -1,6 +1,7 @@
 import Debug from 'debug';
 import util from 'util';
 import TestRun from './test_run';
+import { apiRequest } from './request';
 
 let debug = Debug('testdroid-client:Project');
 
@@ -29,16 +30,17 @@ export default class {
    * @returns {Object} Test run
    */
   async createTestRun() {
+    let request = await apiRequest(this.client);
     let payload = { projectId: this.id };
-    let res = await this.client.post('/runs', { payload: payload });
+    let response = await request.post('/runs', { payload: payload });
 
-    if (!res.ok) {
-      let err = `Could not create a test run in '${this.name}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
+    if (!response.ok) {
+      let error = `Could not create a test run in '${this.name}'. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
     }
 
-    return new TestRun(this.client, res.body);
+    return new TestRun(this.client, response.body);
   }
 
   /**
@@ -50,16 +52,18 @@ export default class {
    * @returns {Object}
    */
   async createTestRunParameter(testRun, parameter) {
+    let request = await apiRequest(this.client);
     debug(`Creating testrun param '${parameter.key}' for test run '${testRun.id}'`);
-    let res = await this.client.post(`${this.URI}/runs/${testRun.id}/config/parameters`, {'payload': parameter});
+    let uri = `${this.URI}/runs/${testRun.id}/config/parameters`;
+    let response = await request.post(uri, {'payload': parameter});
 
-    if (!res.ok) {
-      let err = `Could not create param '${util.inspect(parameter)}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
+    if (!response.ok) {
+      let error = `Could not create param '${util.inspect(parameter)}'. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
     }
 
-    return res.body;
+    return response.body;
   }
 
   /**
@@ -70,12 +74,14 @@ export default class {
    */
   async deleteTestRunParameter(testRun, parameter) {
     debug(`Deleting param '${parameter.key}' for test run '${testRun.id}'`);
-    let res = await this.client.del(`${this.URI}/runs/${testRun.id}/config/parameters/${parameter.id}`);
+    let request = await apiRequest(this.client);
+    let uri = `${this.URI}/runs/${testRun.id}/config/parameters/${parameter.id}`;
+    let response = await request.del(uri);
 
-    if (!res.ok) {
-      let err = `Could not delete param '${parameter.key}'. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
+    if (!response.ok) {
+      let error = `Could not delete param '${parameter.key}'. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
     }
   }
 
@@ -87,18 +93,19 @@ export default class {
    * @returns {Object}
    */
   async getTestRunConfig(testRun) {
-    let res = await this.client.get(`${this.URI}/runs/${testRun.id}/config`);
+    let request = await apiRequest(this.client);
+    let response = await request.get(`${this.URI}/runs/${testRun.id}/config`);
 
-    if (!res.ok) {
-      let err = (
+    if (!response.ok) {
+      let error = (
         `Could not retrieve test run ${testRun.id} in project ${this.name}. ` +
-        `${res.error.message}`
+        `${response.error.message}`
       );
-      debug(err);
-      throw new Error(err);
+      debug(error);
+      throw new Error(error);
     }
 
-    return res.body;
+    return response.body;
   }
 
   /**
@@ -109,18 +116,19 @@ export default class {
    * @returns {Object} - new TestRun instance
    */
   async getTestRun(testRun) {
-    let res = await this.client.get(`${this.URI}/runs/${testRun.id}`);
+    let request = await apiRequest(this.client);
+    let response = await request.get(`${this.URI}/runs/${testRun.id}`);
 
-    if (!res.ok) {
-      let err = (
+    if (!response.ok) {
+      let error = (
         `Could not retrieve test run ${testRun.id} in project ${this.name}. ` +
-        `${res.error.message}`
+        `${response.error.message}`
       );
-      debug(err);
-      throw new Error(err);
+      debug(error);
+      throw new Error(error);
     }
 
-    return new TestRun(this.client, res.body);
+    return new TestRun(this.client, response.body);
   }
 
 }

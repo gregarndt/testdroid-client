@@ -12,12 +12,11 @@ async () => {
     process.exit(-1);
   }
   try {
-    let t = new Testdroid(baseUrl, username, password);
-    let devices = await t.getDevicesByName(deviceName);
+    let client = new Testdroid(baseUrl, username, password);
+    let devices = await client.getDevicesByName(deviceName);
     console.log(`Found ${devices.length} devices matching '${deviceName}'`);
   }
   catch (e) {
     console.log(e);
   }
-
 }();

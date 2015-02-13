@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/mozilla-b2g/testdroid-client",
   "dependencies": {
-    "6to5": "^3.2.0",
+    "6to5": "^3.2.1",
     "argparse": "^0.1.16",
     "debug": "^2.1.1",
     "promise": "^6.1.0",

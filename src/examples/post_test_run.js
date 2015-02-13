@@ -12,12 +12,11 @@ async () => {
 
   try {
     let session, client, project;
-    t = new Testdroid(baseUrl, username, password);
+    client = new Testdroid(baseUrl, username, password);
     project = await client.getProject(projectName);
     console.log(project);
-    project = project[0];
 
-    let testRun = await client.createTestRun(project);
+    let testRun = await project.createTestRun(project);
     console.log(testRun);
   }
   catch (e) {

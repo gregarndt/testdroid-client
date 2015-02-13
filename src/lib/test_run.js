@@ -1,4 +1,5 @@
 import Debug from 'debug';
+import { apiRequest } from './request';
 
 let debug = Debug('testdroid-client:TestRun');
 
@@ -27,12 +28,13 @@ export default class {
    * @returns {Object} response object
    */
   async abort() {
-    let res = await this.client.post(`${this.URI}/abort`);
+    let request = await apiRequest(this.client);
+    let response = await request.post(`${this.URI}/abort`);
 
-    if (!res.ok) {
-      throw new Error(res.error.message);
+    if (!response.ok) {
+      throw new Error(response.error.message);
     }
-    return res;
+    return response;
   }
 
   /**
@@ -41,18 +43,19 @@ export default class {
    * @returns {Object}
    */
   async getConfig() {
-    let res = await this.client.get(`${this.URI}/config`);
+    let request = await apiRequest(this.client);
+    let response = await request.get(`${this.URI}/config`);
 
-    if (!res.ok) {
-      let err = (
+    if (!response.ok) {
+      let error = (
         `Could not retrieve config for test run ${this.id} ` +
-        `${res.error.message}`
+        `${response.error.message}`
       );
-      debug(err);
-      throw new Error(err);
+      debug(error);
+      throw new Error(error);
     }
 
-    return res.body.data;
+    return response.body.data;
   }
 
   /**
@@ -61,18 +64,19 @@ export default class {
    * @returns {Object}
    */
   async getParameters() {
-    let res = await this.client.get(`${this.URI}/config/parameters`);
+    let request = await apiRequest(this.client);
+    let response = await request.get(`${this.URI}/config/parameters`);
 
-    if (!res.ok) {
-      let err = (
+    if (!response.ok) {
+      let error = (
         `Could not retrieve config parameters for test run ${this.id} ` +
-        `${res.error.message}`
+        `${response.error.message}`
       );
-      debug(err);
-      throw new Error(err);
+      debug(error);
+      throw new Error(error);
     }
 
-    return res.body.data;
+    return response.body.data;
   }
 
   /**
@@ -84,14 +88,15 @@ export default class {
    */
   async start(opts) {
     debug('starting test run');
-    var res = await this.client.post(`${this.URI}/start`, {'payload': opts});
+    let request = await apiRequest(this.client);
+    var response = await request.post(`${this.URI}/start`, {'payload': opts});
 
-    if (!res.ok) {
-      let err = `Could not start run. ${res.error.message}`;
-      debug(err);
-      throw new Error(err);
+    if (!response.ok) {
+      let error = `Could not start run. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
     }
     debug('Test Run started');
-    return res;
+    return response;
   }
 }
