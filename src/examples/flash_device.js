@@ -1,20 +1,33 @@
 import Testdroid from 'testdroid-client';
 import util from 'util';
 import { sleep } from '../lib/util';
+import { parser } from './credentialParser';
+
+parser.addArgument(
+  ['-b', '--build-url'],
+  {
+    help: 'URL for the flame-kk.zip build file',
+    required: true
+  }
+);
+parser.addArgument(
+  ['-m', '--memory'],
+  {
+    help: 'Memory configuration required (e.g. 319, 512)',
+    required: true
+  }
+);
+
+let args = parser.parseArgs();
 
 async () => {
-  let baseUrl = process.argv[2];
-  let username = process.argv[3];
-  let password = process.argv[4];
-  let buildUrl = process.argv[5];
-  let memory = process.argv[6];
   let buildLabelGroupName = 'Build Identifier';
   let flashProjectName = 'flash-fxos';
-
-  if (process.argv.length < 6) {
-    console.log("Must supply url, username, password, and build URL");
-    process.exit(-1);
-  }
+  let baseUrl = args.cloud_url;
+  let username = args.username;
+  let password = args.password;
+  let buildUrl = args.build_url;
+  let memory = args.memory;
 
   try {
     let client = new Testdroid(baseUrl, username, password);
@@ -34,6 +47,7 @@ async () => {
     }
 
     let project = await client.getProject(flashProjectName);
+    process.exit();
     let testRun = await project.createTestRun();
 
     let projectTestRunConfig = await project.getTestRunConfig(testRun);
@@ -45,7 +59,7 @@ async () => {
 
     await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
     await project.createTestRunParameter(testRun, {'key': 'MEM_TOTAL', 'value': memory});
-    let devices = await client.getDevicesWithLabel('t2m flame');
+    let devices = await client.getDevicesByName('t2m flame');
     let device = devices.find(d => d.online === true);
     if (!device) {
       throw new Error("Couldn't find device that is online");

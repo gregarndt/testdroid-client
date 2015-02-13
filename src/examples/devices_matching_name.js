@@ -1,16 +1,22 @@
-
+import { parser } from './credentialParser';
 import Testdroid from 'testdroid-client';
 
-async () => {
-  let baseUrl = process.argv[2];
-  let username = process.argv[3];
-  let password = process.argv[4];
-  let deviceName = process.argv[5];
-
-  if (process.argv.length < 6) {
-    console.log("Must supply url, username, password, and device name");
-    process.exit(-1);
+parser.addArgument(
+  ['-d', '--device-name'],
+  {
+    help: 'Memory configuration required (e.g. 319, 512)',
+    required: true
   }
+);
+
+let args = parser.parseArgs();
+
+async () => {
+  let baseUrl = args.cloud_url;
+  let username = args.username;
+  let password = args.password;
+  let deviceName = args.device_name;
+
   try {
     let client = new Testdroid(baseUrl, username, password);
     let devices = await client.getDevicesByName(deviceName);

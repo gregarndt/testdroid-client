@@ -1,13 +1,12 @@
+import { parser } from './credentialParser';
 import Testdroid from 'testdroid-client';
 
-async () => {
-  let baseUrl = process.argv[2];
-  let username = process.argv[3];
-  let password = process.argv[4];
+let args = parser.parseArgs();
 
-  if (process.argv.length < 5) {
-    process.exit("Must supply url, username, and password");
-  }
+async () => {
+  let baseUrl = args.cloud_url;
+  let username = args.username;
+  let password = args.password;
 
   try {
     let session, client, projects, project;

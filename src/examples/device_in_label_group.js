@@ -1,16 +1,22 @@
+import { parser } from './credentialParser';
 import Testdroid from 'testdroid-client';
 
+parser.addArgument(
+  ['-b', '--build-label'],
+  {
+    help: 'Label assigned to a device',
+    required: true
+  }
+);
+let args = parser.parseArgs();
+
 async () => {
-  let baseUrl = process.argv[2];
-  let username = process.argv[3];
-  let password = process.argv[4];
-  let buildLabel = process.argv[5];
+  let baseUrl = args.cloud_url;
+  let username = args.username;
+  let password = args.password;
+  let buildLabel = args.build_label;
   let labelGroupName = "Build Identifier";
 
-  if (process.argv.length < 5) {
-    console.log("Must supply url, username, and password");
-    process.exit(-1);
-  }
   let session, client, labelGroup, label, device;
   try {
     client = new Testdroid(baseUrl, username, password);
