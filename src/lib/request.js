@@ -130,7 +130,7 @@ export class Request {
    * @returns {Object} Response
    */
   async post(path, opts={}) {
-    debug("Submitting to %s with opts: %j", path, opts);
+    debug(`Submitting to ${path}`);
     opts.headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
     };

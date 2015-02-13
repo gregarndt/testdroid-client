@@ -1,17 +1,13 @@
 import Testdroid from 'testdroid-client';
 import util from 'util';
-
-function sleep(duration) {
-  return new Promise(function(accept) {
-    setTimeout(accept, duration);
-    });
-}
+import { sleep } from '../lib/util';
 
 async () => {
   let baseUrl = process.argv[2];
   let username = process.argv[3];
   let password = process.argv[4];
   let buildUrl = process.argv[5];
+  let memory = process.argv[6];
   let buildLabelGroupName = 'Build Identifier';
   let flashProjectName = 'flash-fxos';
 
@@ -25,7 +21,7 @@ async () => {
 
     let labelGroup = await client.getLabelGroup(buildLabelGroupName);
 
-    let label = await client.getLabelInGroup(buildUrl, labelGroup);
+    let label = await client.getLabelInGroup(`${memory}_${buildUrl}`, labelGroup);
     if (label) {
       let devices = await client.getDevicesWithLabel(label);
       if (devices.length) {
@@ -47,7 +43,8 @@ async () => {
       await project.deleteTestRunParameter(testRun, testRunParams[i]);
     }
 
-    let param = await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
+    await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
+    await project.createTestRunParameter(testRun, {'key': 'MEM_TOTAL', 'value': memory});
     let devices = await client.getDevicesWithLabel('t2m flame');
     let device = devices.find(d => d.online === true);
     if (!device) {
