@@ -15,6 +15,10 @@ async () => {
     client = new Testdroid(baseUrl, username, password);
     let labelGroups = await client.getLabelGroups();
     console.log(labelGroups);
+    for(let labelGroup of labelGroups) {
+      let labels = await client.getLabelslInGroup(labelGroup.displayName);
+      console.log(labels);
+    }
   }
   catch (e) {
     console.log(e);

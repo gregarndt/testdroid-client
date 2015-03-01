@@ -17,6 +17,21 @@ parser.addArgument(
     required: true
   }
 );
+parser.addArgument(
+  ['-d', '--type'],
+  {
+    help: 'device type',
+    required: true
+  }
+);
+
+parser.addArgument(
+  ['-s', '--sims'],
+  {
+    help: 'number of sims in the device',
+    required: true
+  }
+);
 
 let args = parser.parseArgs();
 
@@ -26,28 +41,31 @@ async () => {
   let baseUrl = args.cloud_url;
   let username = args.username;
   let password = args.password;
+  let deviceType = args.type;
   let buildUrl = args.build_url;
   let memory = args.memory;
+  let sims = args.sims;
 
   try {
+    let filter = {
+      'build': buildUrl,
+      'memory': memory,
+      'type': deviceType,
+      'sims': sims
+    };
+
     let client = new Testdroid(baseUrl, username, password);
+    let devices = await client.getDevices(filter);
 
-    let labelGroup = await client.getLabelGroup(buildLabelGroupName);
-
-    let label = await client.getLabelInGroup(`${memory}_${buildUrl}`, labelGroup);
-    if (label) {
-      let devices = await client.getDevicesWithLabel(label);
-      if (devices.length) {
-        console.log(
-          `Device with build was found, no need to flash. \n ` +
-          `${util.inspect(devices[0])}`
-        );
-        return;
-      }
+    if (devices.length) {
+      console.log(
+        `Device with build was found, no need to flash. \n ` +
+        `${util.inspect(devices[0])}`
+      );
+      return;
     }
 
     let project = await client.getProject(flashProjectName);
-    process.exit();
     let testRun = await project.createTestRun();
 
     let projectTestRunConfig = await project.getTestRunConfig(testRun);
@@ -59,8 +77,11 @@ async () => {
 
     await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
     await project.createTestRunParameter(testRun, {'key': 'MEM_TOTAL', 'value': memory});
-    let devices = await client.getDevicesByName('t2m flame');
-    let device = devices.find(d => d.online === true);
+    devices = await client.getDevices({'type': deviceType, 'sims': sims});
+    let device;
+    if (devices) {
+      device = devices.find(d => d.online === true);
+    }
     if (!device) {
       throw new Error("Couldn't find device that is online");
     }
@@ -78,11 +99,10 @@ async () => {
       await sleep(10000);
       testRun = await project.getTestRun(testRun);
     }
+    device = await client.getDevices(filter);
+    console.log(device);
   }
   catch (e) {
     console.log(e);
-  }
-  if (session) {
-    await client.stopDeviceSession(session.id);
   }
 }();
