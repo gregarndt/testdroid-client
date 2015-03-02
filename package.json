@@ -1,6 +1,6 @@
 {
   "name": "testdroid-client",
-  "version": "0.0.3",
+  "version": "0.0.4-alpha2",
   "description": "Client for interacting with Testdroid Cloud API",
   "main": "./build/lib/testdroid.js",
   "scripts": {

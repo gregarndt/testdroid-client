@@ -75,8 +75,8 @@ async () => {
       await project.deleteTestRunParameter(testRun, testRunParams[i]);
     }
 
-    await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': buildUrl});
-    await project.createTestRunParameter(testRun, {'key': 'MEM_TOTAL', 'value': memory});
+    await project.createTestRunParameter(testRun, {'key': 'FLAME_ZIP_URL', 'value': filter.build});
+    await project.createTestRunParameter(testRun, {'key': 'MEM_TOTAL', 'value': filter.memory});
     devices = await client.getDevices({'type': deviceType, 'sims': sims});
     let device;
     if (devices) {

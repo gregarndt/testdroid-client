@@ -12,7 +12,7 @@ let CAPABILITY_LABEL_MAPPING = {
   'build'         : 'Build Identifier',
   'sims'          : 'SIMs',
   'imei'          : 'IMEI',
-  'phone number'  : 'Phone Number',
+  'phone_number'  : 'Phone Number',
   'memory'        : 'memory'
 };
 
@@ -29,9 +29,9 @@ function mapCapabilitiesToLabels(capabilities) {
   // Special case where a label is a combination of two device capabilities
   if ('memory' in capabilities && 'build' in capabilities) {
     capabilities.build = `${capabilities.memory}_${capabilities.build}`;
-    delete(capabilities.memory);
   }
   for(let capability in capabilities) {
+    if(capability === 'memory') continue;
     if(!(capability in CAPABILITY_LABEL_MAPPING)) {
       throw new Error(`Invalid '${capability}' capability provided.`);
     }
