@@ -5,6 +5,7 @@ import urljoin from 'url-join';
 import util from 'util';
 import Project from './project';
 import { sleep } from './util';
+import _ from 'lodash';
 
 let debug = Debug('testdroid-client');
 let CAPABILITY_LABEL_MAPPING = {
@@ -25,17 +26,18 @@ let CAPABILITY_LABEL_MAPPING = {
  * @returns {Object} - labels - Testdroid label grup name to label value mapping
  */
 function mapCapabilitiesToLabels(capabilities) {
+  let deviceCapabilities = _.clone(capabilities, true);
   let labels = {};
   // Special case where a label is a combination of two device capabilities
-  if ('memory' in capabilities && 'build' in capabilities) {
-    capabilities.build = `${capabilities.memory}_${capabilities.build}`;
+  if ('memory' in deviceCapabilities && 'build' in deviceCapabilities) {
+    deviceCapabilities.build = `${deviceCapabilities.memory}_${deviceCapabilities.build}`;
+    delete deviceCapabilities.memory;
   }
-  for(let capability in capabilities) {
-    if(capability === 'memory') continue;
+  for(let capability in deviceCapabilities) {
     if(!(capability in CAPABILITY_LABEL_MAPPING)) {
       throw new Error(`Invalid '${capability}' capability provided.`);
     }
-    labels[CAPABILITY_LABEL_MAPPING[capability]] = capabilities[capability];
+    labels[CAPABILITY_LABEL_MAPPING[capability]] = deviceCapabilities[capability];
   }
 
   return labels;
@@ -136,6 +138,20 @@ export default class {
     });
 
     return matchedDevices;
+  }
+
+  /**
+   * Get list of device properties
+   *
+   * @param {Object} device
+   *
+   * @returns {Array}
+   */
+  async getDeviceProperties(device) {
+    let request = await apiRequest(this);
+    let response = await request.get(`devices/${device.id}/properties?limit=0`);
+    let properties = response.body.data || [];
+    return properties;
   }
 
   /**

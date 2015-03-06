@@ -1,6 +1,6 @@
 {
   "name": "testdroid-client",
-  "version": "0.0.4-alpha2",
+  "version": "0.0.4-alpha4",
   "description": "Client for interacting with Testdroid Cloud API",
   "main": "./build/lib/testdroid.js",
   "scripts": {
@@ -21,6 +21,7 @@
     "6to5": "^3.2.1",
     "argparse": "^0.1.16",
     "debug": "^2.1.1",
+    "lodash": "^3.3.1",
     "promise": "^6.1.0",
     "superagent": "^0.21.0",
     "superagent-promise": "^0.2.0",

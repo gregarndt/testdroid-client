@@ -61,6 +61,8 @@ async () => {
         `Found device '${device.displayName}' with device ID '${device.id}'`
       );
       console.log(device);
+      let props = await client.getDeviceProperties(device);
+      console.log(props);
     }
   }
   catch (e) {
