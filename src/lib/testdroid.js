@@ -5,8 +5,43 @@ import urljoin from 'url-join';
 import util from 'util';
 import Project from './project';
 import { sleep } from './util';
+import _ from 'lodash';
 
 let debug = Debug('testdroid-client');
+let CAPABILITY_LABEL_MAPPING = {
+  'type'          : 'Codename',
+  'build'         : 'Build Identifier',
+  'sims'          : 'SIMs',
+  'imei'          : 'IMEI',
+  'phone_number'  : 'Phone Number',
+  'memory'        : 'memory'
+};
+
+/**
+ * Takes a list of capabilities for a device and returns back a label to value
+ * mapping that can be translated into testdroid labels
+ *
+ * @param {Object} - capabilities - hash containing a list of device capabilities
+ *
+ * @returns {Object} - labels - Testdroid label grup name to label value mapping
+ */
+function mapCapabilitiesToLabels(capabilities) {
+  let deviceCapabilities = _.clone(capabilities, true);
+  let labels = {};
+  // Special case where a label is a combination of two device capabilities
+  if ('memory' in deviceCapabilities && 'build' in deviceCapabilities) {
+    deviceCapabilities.build = `${deviceCapabilities.memory}_${deviceCapabilities.build}`;
+    delete deviceCapabilities.memory;
+  }
+  for(let capability in deviceCapabilities) {
+    if(!(capability in CAPABILITY_LABEL_MAPPING)) {
+      throw new Error(`Invalid '${capability}' capability provided.`);
+    }
+    labels[CAPABILITY_LABEL_MAPPING[capability]] = deviceCapabilities[capability];
+  }
+
+  return labels;
+}
 
 /**
  * Initializes a new Testdroid client to be used with the Testdroid Cloud API.
@@ -43,12 +78,48 @@ export default class {
 
   /**
    * Retrieves all devices.
-   * @param {Number} limit - number of devices to return
+   *
+   * Optionally a filter can be supplied that will limit the devices returned. Currently
+   * devices are filtered using label ids that are found within label groups.  Instead
+   * of supplying these things, there is a set of common capabilities that a phone possesses
+   * that can be specified directly and will be translated into the appropriate label
+   * within testdroid.  Current capabilities are type, sims, build, imei, phone number.
+   *
+   * let filter = {
+   *   'limit': 0,
+   *   'type': 'Flame',
+   *   'sims': '1',
+   *   'build': 'http://path/to/flame-kk.zip'
+   * }
+   * testdroidClient.getDevices(filter);
+   *
+   * @param {Object} filter - Filter devices returned
    * @returns {Array}
    */
-  async getDevices(limit=0) {
+  async getDevices(filter={}) {
     let request = await apiRequest(this);
-    let opts = { 'payload': { 'limit': limit }};
+    let appliedFilter = {};
+    appliedFilter.limit = filter.limit ? filter.limit : 0;
+
+    let labels;
+    try {
+      labels = mapCapabilitiesToLabels(filter);
+    }
+    catch (e) {
+      debug(e);
+      return [];
+    }
+
+    let labelIds = [];
+    for(let label in labels) {
+      let labelId = await this.getLabelInGroup(labels[label], label);
+      // If a label cannot be found, do not attempt to search for a device
+      if (!labelId) { return []; }
+      labelIds.push(labelId.id);
+    }
+
+    if (labelIds.length) appliedFilter['label_id[]'] = labelIds.join(',');
+    let opts = { 'payload': appliedFilter};
     let response = await request.get('devices', opts);
 
     return response.body.data;
@@ -70,29 +141,17 @@ export default class {
   }
 
   /**
-   * Retreives devices with a given label.
+   * Get list of device properties
    *
-   * @param {Object} Label object as returned from methods such as getLabelinGroup.
+   * @param {Object} device
    *
    * @returns {Array}
    */
-  async getDevicesWithLabel(label) {
-    debug(`Retrieving devices with label ${label.displayName}`);
+  async getDeviceProperties(device) {
     let request = await apiRequest(this);
-    let opts = { 'payload': { 'label_id[]':  label.id, 'limit': 0}};
-    let response = await request.get('devices', opts);
-
-    if (!response.ok) {
-      let error = (
-        `Request for devices with label ${label.displayName} ` +
-        `could not be completed. ${response.error.message}`
-      );
-
-      debug(error);
-      throw new Error(error);
-    }
-
-    return response.body.data;
+    let response = await request.get(`devices/${device.id}/properties?limit=0`);
+    let properties = response.body.data || [];
+    return properties;
   }
 
   /**
@@ -100,13 +159,13 @@ export default class {
    *
    * @param {String} labelName - Name of the label group
    *
-   * @returns {Array}
+   * @returns {Object}
    */
-  async getLabelGroup(labelName) {
-    debug(`Retrieving ${labelName} label group`);
+  async getLabelGroup(labelGroupName) {
+    debug(`Retrieving ${labelGroupName} label group`);
     let request = await apiRequest(this);
 
-    let search = {'search': labelName};
+    let search = {'search': labelGroupName};
     let response = await request.get('label-groups', {'payload': search});
 
     if (!response.ok) {
@@ -115,22 +174,50 @@ export default class {
       throw new Error(error);
     }
 
-    return response.body.data.find(l => l.displayName === labelName);
+    let labelMatch = response.body.data.find(
+        l => l.displayName.toLowerCase() === labelGroupName.toLowerCase());
+    if (!labelMatch) {
+      debug(`Could not find a label group matching '${labelGroupName}'`);
+    }
+    return labelMatch;
+  }
+
+  /**
+   * Gets all label groups
+   *
+   * @returns {Array}
+   */
+  async getLabelGroups() {
+    debug(`Retrieving all label groups`);
+    let request = await apiRequest(this);
+
+    let response = await request.get('label-groups');
+
+    if (!response.ok) {
+      let error = `Could not complete request to find label groups. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
+    }
+
+    return response.body.data;
   }
 
   /**
    * Retrieves label within a specific label group.
    *
    * @param {String} labelName
-   * @param {Object} labelGroup
+   * @param {String} labelGroupName - Name of the group to find the label in
    *
    * @returns {Object}
    */
-  async getLabelInGroup(labelName, labelGroup) {
-    debug(`Retrieving label '${labelName}' in label group ${labelGroup.displayName}`);
+  async getLabelInGroup(label, labelGroupName) {
+    debug(`Retrieving label '${label}' in label group '${labelGroupName}'`);
+    let labelGroup = await this.getLabelGroup(labelGroupName);
+    if (!labelGroup) return;
+
     let request = await apiRequest(this);
 
-    let payload = { 'payload': { 'search': labelName } };
+    let payload = { 'payload': { 'search': label } };
     let response = await request.get(`label-groups/${labelGroup.id}/labels`, payload);
 
     if (!response.ok) {
@@ -139,7 +226,32 @@ export default class {
       throw new Error(error);
     }
 
-    return response.body.data.find(l => l.displayName === labelName);
+    let labelMatch = response.body.data.find(
+      l => l.displayName.toLowerCase() === label.toLowerCase()
+    );
+    if (!labelMatch) { debug(`Could not find a label matching '${label}'`); }
+    return labelMatch;
+  }
+
+  async getLabelslInGroup(labelGroupName) {
+    let labels = [];
+    debug(`Retrieving all labels in label group '${labelGroupName}'`);
+    let labelGroup = await this.getLabelGroup(labelGroupName);
+    if (!labelGroup) return labels;
+
+    let request = await apiRequest(this);
+
+    let response = await request.get(`label-groups/${labelGroup.id}/labels`);
+
+    if (!response.ok) {
+      let error = `Could not retrieve labels. Error: ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
+    }
+
+    labels = response.body.data;
+
+    return labels;
   }
 
   /**
@@ -187,7 +299,8 @@ export default class {
     }
 
     // find exact match
-    let project = response.body.data.find(p => p.name === projectName);
+    let project = response.body.data.find(
+      p => p.name.toLowerCase() === projectName.toLowerCase());
 
     if (!project) return;
 
