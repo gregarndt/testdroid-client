@@ -342,7 +342,8 @@ export default class {
     }
 
     if (!response.ok || !response.body.length) {
-      var error = `Could not get ${type} proxy session for ${sessionId}`;
+      var error = `Could not get ${type} proxy session ` +
+                  `for ${sessionId}. Error: ${response.error.message}`;
       debug(error);
       throw new Error(error);
     }
