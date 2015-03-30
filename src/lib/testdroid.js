@@ -97,7 +97,6 @@ export default class {
    * @returns {Array}
    */
   async getDevices(filter={}) {
-    let request = await apiRequest(this);
     let appliedFilter = {};
     appliedFilter.limit = filter.limit ? filter.limit : 0;
 
@@ -120,6 +119,7 @@ export default class {
 
     if (labelIds.length) appliedFilter['label_id[]'] = labelIds.join(',');
     let opts = { 'payload': appliedFilter};
+    let request = await apiRequest(this);
     let response = await request.get('devices', opts);
 
     return response.body.data;

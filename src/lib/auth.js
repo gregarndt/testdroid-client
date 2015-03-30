@@ -35,11 +35,18 @@ export default async function (client) {
     };
   }
 
-  let response = await request.post('oauth/token', {'payload': payload})
+  let response = await request.post('oauth/token', {'payload': payload});
 
   if (!response.ok) {
+    debug(
+      `Could not retrieve token. ` +
+      `Error Reponse: ${response.body.error_description} ` +
+      `Status Code: ${response.status}`
+    );
+    // Do not log error response because it could contain information such as
+    // tokens that we might not want to exposed (even if expired)
     throw new Error(
-      `Could not retrieve token. Error Reponse: ${response.body.error_description}`
+      `Could not retrieve token. Status Code: ${response.status}`
     );
   }
 
