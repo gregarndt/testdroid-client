@@ -356,12 +356,16 @@ export default class {
    * Creates a device session for a particular device ID.
    *
    * @param {String} deviceId - ID of the device as returned by getDevices or getDeviceByName
+   * @param {Number} timeout - Session timeout, defaults to 30 minutes
    * @returns {Object} Information about the device session including session ID which is used elsewhere.
    */
-  async startDeviceSession(deviceId) {
+  async startDeviceSession(deviceId, timeout=1800) {
     debug("Creating a device session for '%s'", deviceId);
     let request = await apiRequest(this);
-    let payload = { 'deviceModelId': deviceId };
+    let payload = {
+      deviceModelId: deviceId
+      timeout: timeout
+    };
     let response = await request.post('me/device-sessions', { 'payload': payload });
 
     if (!response.ok) {
