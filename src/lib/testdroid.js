@@ -363,7 +363,7 @@ export default class {
     debug("Creating a device session for '%s'", deviceId);
     let request = await apiRequest(this);
     let payload = {
-      deviceModelId: deviceId
+      deviceModelId: deviceId,
       timeout: timeout
     };
     let response = await request.post('me/device-sessions', { 'payload': payload });

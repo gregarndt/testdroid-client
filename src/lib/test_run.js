@@ -99,4 +99,18 @@ export default class {
     debug('Test Run started');
     return response;
   }
+
+  async getDeviceRunsList() {
+    let request = await apiRequest(this.client);
+    let response = await request.get(`${this.URI}/device-runs`);
+
+    if (!response.ok) {
+      let error = `Could not retrieve device run list for ` +
+                  `test run ${this.id}. ${response.error.message}`;
+      debug(error);
+      throw new Error(error);
+    }
+
+    return response.body.data
+  }
 }
